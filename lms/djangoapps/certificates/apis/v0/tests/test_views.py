@@ -207,6 +207,8 @@ class CertificatesListRestApiTest(AuthAndScopesTestMixin, SharedModuleStoreTestC
         Returns 200 with empty list for OAuth, Session, and JWT auth.
         Returns 200 for jwt_restricted and user:me filter unset.
         """
+        self.other_student.is_staff = True
+        self.other_student.save()
         resp = self.get_response(auth_type, requesting_user=self.other_student)
 
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
