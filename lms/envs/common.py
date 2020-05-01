@@ -3278,6 +3278,7 @@ ACCOUNT_VISIBILITY_CONFIGURATION["bulk_shareable_fields"] = (
         'bio',
         'course_certificates',
         'country',
+        'state',
         'date_joined',
         'language_proficiencies',
         "level_of_education",
