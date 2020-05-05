@@ -277,8 +277,8 @@ class TestLinkProgramEnrollments(TestLinkProgramEnrollmentsMixin, TestCase):
     @patch('lms.djangoapps.program_enrollments.api.linking.CourseMode.modes_for_course_dict')
     def test_update_linking_enrollment_to_another_user(self, mock_modes_for_course_dict):
         """
-        Test that when link_program_enrollments is called with a program and an external_student_key,
-        user pair and that program is already linked to a different user with the same external_student_key
+        Test that when link_program_enrollments is called with a program and an external_user_key,
+        user pair and that program is already linked to a different user with the same external_user_key
         that the original user's link is removed and replaced by a link with the new user.
         """
         program_enrollment = self._create_waiting_enrollment(self.program, '0001')
@@ -366,7 +366,7 @@ class TestLinkProgramEnrollmentsErrors(TestLinkProgramEnrollmentsMixin, TestCase
             )
             expected_error_msg = NO_PROGRAM_ENROLLMENT_TEMPLATE.format(
                 program_uuid=self.program,
-                external_student_key='0002'
+                external_user_key='0002'
             )
             logger.check_present((LOG_PATH, 'WARNING', expected_error_msg))
 

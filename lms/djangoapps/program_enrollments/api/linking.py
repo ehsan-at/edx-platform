@@ -1,5 +1,5 @@
 """
-Python API function to link program enrollments and external_student_keys to an
+Python API function to link program enrollments and external_user_keys to an
 LMS user.
 
 Outside of this subpackage, import these functions
@@ -25,11 +25,11 @@ User = get_user_model()
 
 NO_PROGRAM_ENROLLMENT_TEMPLATE = (
     'No program enrollment found for program uuid={program_uuid} and external student '
-    'key={external_student_key}'
+    'key={external_user_key}'
 )
 NO_LMS_USER_TEMPLATE = 'No user found with username {}'
 EXISTING_USER_TEMPLATE = (
-    'Program enrollment with external_student_key={external_student_key} is already linked to '
+    'Program enrollment with external_student_key={external_user_key} is already linked to '
     '{account_relation} account username={username}'
 )
 
@@ -81,15 +81,15 @@ def link_program_enrollments(program_uuid, external_keys_to_usernames):
         program_uuid, external_keys_to_usernames.keys()
     )
     users_by_username = _get_lms_users(external_keys_to_usernames.values())
-    for external_student_key, username in external_keys_to_usernames.items():
-        program_enrollment = program_enrollments.get(external_student_key)
+    for external_user_key, username in external_keys_to_usernames.items():
+        program_enrollment = program_enrollments.get(external_user_key)
         user = users_by_username.get(username)
         if not user:
             error_message = NO_LMS_USER_TEMPLATE.format(username)
         elif not program_enrollment:
             error_message = NO_PROGRAM_ENROLLMENT_TEMPLATE.format(
                 program_uuid=program_uuid,
-                external_student_key=external_student_key
+                external_user_key=external_user_key
             )
         # if we're trying to establish a link that already exists
         elif program_enrollment.user and program_enrollment.user == user:
@@ -98,7 +98,7 @@ def link_program_enrollments(program_uuid, external_keys_to_usernames):
             error_message = None
         if error_message:
             logger.warning(error_message)
-            errors[external_student_key] = error_message
+            errors[external_user_key] = error_message
             continue
         try:
             with transaction.atomic():
@@ -107,12 +107,12 @@ def link_program_enrollments(program_uuid, external_keys_to_usernames):
                 # linking the ProgramEnrollment to the new user.
                 if program_enrollment.user and program_enrollment.user != user:
                     message = ('Unlinking user with username={old_username} from program enrollment with '
-                               'program uuid={program_uuid} with external_student_key={external_student_key} '
+                               'program uuid={program_uuid} with external_student_key={external_user_key} '
                                'and linking user with username={new_username} '
                                'to program enrollment.').format(
                         old_username=program_enrollment.user.username,
                         program_uuid=program_uuid,
-                        external_student_key=external_student_key,
+                        external_user_key=external_user_key,
                         new_username=user,
                     )
                     logger.info(_user_already_linked_message(program_enrollment, user))
@@ -123,14 +123,14 @@ def link_program_enrollments(program_uuid, external_keys_to_usernames):
                 link_program_enrollment_to_lms_user(program_enrollment, user)
         except (CourseEnrollmentException, IntegrityError) as e:
             logger.exception("Rolling back all operations for {}:{}".format(
-                external_student_key,
+                external_user_key,
                 username,
             ))
             error_message = type(e).__name__
             if str(e):
                 error_message += ': '
                 error_message += str(e)
-            errors[external_student_key] = error_message
+            errors[external_user_key] = error_message
     return errors
 
 
@@ -139,22 +139,22 @@ def _user_already_linked_message(program_enrollment, user):
     Creates an error message that the specified program enrollment is already linked to an lms user
     """
     existing_username = program_enrollment.user.username
-    external_student_key = program_enrollment.external_user_key
+    external_user_key = program_enrollment.external_user_key
     return EXISTING_USER_TEMPLATE.format(
-        external_student_key=external_student_key,
+        external_user_key=external_user_key,
         account_relation='target' if program_enrollment.user.id == user.id else 'a different',
         username=existing_username,
     )
 
 
-def _get_program_enrollments_by_ext_key(program_uuid, external_student_keys):
+def _get_program_enrollments_by_ext_key(program_uuid, external_user_keys):
     """
     Does a bulk read of ProgramEnrollments for a given program and list of external student keys
     and returns a dict keyed by external student key
     """
     program_enrollments = fetch_program_enrollments(
         program_uuid=program_uuid,
-        external_user_keys=external_student_keys,
+        external_user_keys=external_user_keys,
     ).prefetch_related(
         'program_course_enrollments'
     ).select_related('user')
