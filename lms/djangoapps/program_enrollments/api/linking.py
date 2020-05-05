@@ -12,6 +12,7 @@ import logging
 from django.contrib.auth import get_user_model
 from django.db import IntegrityError, transaction
 
+from course_modes.models import CourseMode
 from student.api import get_access_role_by_role_name
 from student.models import CourseEnrollmentException
 
@@ -63,8 +64,9 @@ def link_program_enrollments(program_uuid, external_keys_to_usernames):
     is different than the requested user, we do the following. We unlink the existing user from
     the program enrollment and link the requested user to the program enrollment. This is accomplished by
     removing the existing user's link to the program enrollment. If the program enrollment
-    has course enrollments, then we unenroll the user and put them in the audit track. We also
-    remove the association between those course enrollments and the program course enrollments. The
+    has course enrollments, then we unenroll the user. If there is an audit track in the course,
+    we also move the enrollment into the audit track. We also remove the association between those
+    course enrollments and the program course enrollments. The
     requested user is then linked to the program following the above logic.
 
     If there is an error while enrolling a user in a waiting program course enrollment, the
@@ -177,7 +179,7 @@ def unlink_program_enrollment(program_enrollment):
     Unlinks CourseEnrollments from the ProgramEnrollment by doing the following for
     each ProgramCourseEnrollment associated with the Program Enrollment.
         1. unenrolling the corresponding user from the course
-        2. moving the user into the audit track
+        2. moving the user into the audit track, if the track exists
         3. removing the link between the ProgramCourseEnrollment and the CourseEnrollment
 
     Arguments:
@@ -186,13 +188,22 @@ def unlink_program_enrollment(program_enrollment):
     program_course_enrollments = program_enrollment.program_course_enrollments.all()
 
     for pce in program_course_enrollments:
-        # deactivate the learner's CourseRunEnrollment and move them into the audit track
-        # this saves automatically
-        pce.course_enrollment.update_enrollment(
-            is_active=False,
-            mode='audit',
-            skip_refund=True,
-        )
+        course_key = pce.course_enrollment.course.id
+        modes = CourseMode.modes_for_course_dict(course_key)
+
+        update_enrollment_kwargs = {
+            'is_active': False,
+            'skip_refund': True,
+        }
+
+        if CourseMode.contains_audit_mode(modes):
+            # if the course contains an audit mode, move the
+            # learner's enrollment into the audit mode
+            update_enrollment_kwargs['mode'] = 'audit'
+
+        # deactive the learner's course enrollment and move them into the
+        # audit track, if it exists
+        pce.course_enrollment.update_enrollment(**update_enrollment_kwargs)
 
         # sever ties to the user from the ProgramCourseEnrollment
         pce.course_enrollment = None
