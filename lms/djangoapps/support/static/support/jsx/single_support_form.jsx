@@ -19,14 +19,15 @@ class RenderForm extends React.Component {
   constructor(props) {
     super(props);
     this.userInformation = this.props.context.user;
+    const course = this.userInformation ? this.userInformation.course_id : '';
     this.state = {
       currentRequest: null,
       errorList: [],
       success: false,
       formData: {
         subject: '',
-        course: this.userInformation.course_id,
         message: '',
+        course,
       },
     };
     this.submitForm = this.submitForm.bind(this);
@@ -232,7 +233,17 @@ class RenderForm extends React.Component {
 }
 
 RenderForm.propTypes = {
-  context: PropTypes.arrayOf(PropTypes.object).isRequired,
+  context: PropTypes.shape({
+    customFields: PropTypes.object,
+    dashboardUrl: PropTypes.string,
+    homepageUrl: PropTypes.string,
+    loginQuery: PropTypes.string,
+    platformName: PropTypes.string,
+    submitFormUrl: PropTypes.string,
+    supportEmail: PropTypes.string,
+    tags: PropTypes.arrayOf(PropTypes.string),
+    user: PropTypes.object,
+  }).isRequired,
 };
 
 export class SingleSupportForm {

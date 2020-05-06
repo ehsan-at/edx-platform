@@ -104,9 +104,11 @@ function LoggedInUser({ userInformation, onChangeCallback, submitForm, showWarni
         </div>
         <div className="row">
           <div className="col-sm-12">
-            <button
-              className="btn btn-primary btn-submit"
-            >{gettext('Create Support Ticket')}</button>
+            <Button
+              className={['btn', 'btn-primary', 'btn-submit']}
+              type="submit"
+              label={gettext('Create Support Ticket')}
+            />
           </div>
         </div>
       </div>
@@ -162,7 +164,12 @@ LoggedInUser.propTypes = {
   submitForm: PropTypes.func.isRequired,
   onChangeCallback: PropTypes.func.isRequired,
   reDirectUser: PropTypes.func.isRequired,
-  userInformation: PropTypes.arrayOf(PropTypes.object).isRequired,
+  userInformation: PropTypes.shape({
+    course_id: PropTypes.string,
+    username: PropTypes.string,
+    email: PropTypes.string,
+    enrollments: PropTypes.arrayOf(PropTypes.object),
+  }).isRequired,
   showWarning: PropTypes.bool.isRequired,
   showDiscussionButton: PropTypes.bool.isRequired,
 };
